@@ -26,14 +26,14 @@ def get_user_financial_data(user_id: int) -> pd.DataFrame:
     response_transactions = supabase.table("transactions").select("created_at, amount").eq("user_id", user_id).execute()
 
     if not response_income.data and not response_transactions.data:
-        print(f"Không có dữ liệu income hoặc transactions cho user_id: {user_id}")
+        print(f"Khong co du lieu income hoac transactions cho user_id: {user_id}")
         return pd.DataFrame()
 
     df_income = pd.DataFrame(response_income.data)
     df_transactions = pd.DataFrame(response_transactions.data)
 
-    df_income["created_at"] = pd.to_datetime(df_income["created_at"]).dt.date
-    df_transactions["created_at"] = pd.to_datetime(df_transactions["created_at"]).dt.date
+    df_income["created_at"] = pd.to_datetime(df_income["created_at"], format="ISO8601", errors="coerce").dt.date
+    df_transactions["created_at"] = pd.to_datetime(df_transactions["created_at"], format="ISO8601", errors="coerce").dt.date
 
     df_income = df_income.groupby("created_at", as_index=False).agg({"amount": "sum"})
     df_income.rename(columns={"created_at": "ds", "amount": "total_income"}, inplace=True)
@@ -67,7 +67,7 @@ def get_user_financial_data(user_id: int) -> pd.DataFrame:
     df_full["total_spent"] = df_full["total_spent"].astype(int)
     df_full["balance"] = df_full["balance"].astype(int)
 
-    print("Dữ liệu tài chính đã xử lý:")
+    print("Du lieu tai chinh da xu ly:")
     print(df_full.tail())
 
     return df_full
@@ -77,16 +77,16 @@ def preprocess_transactions(user_id: int) -> pd.DataFrame:
     response = supabase.table("transactions").select("created_at, amount").eq("user_id", user_id).execute()
 
     if not response.data:
-        print(f"Không có dữ liệu cho user_id = {user_id}")
+        print(f"Khong co du lieu cho user_id = {user_id}")
         return pd.DataFrame()
 
     df = pd.DataFrame(response.data)
     
     if df.empty:
-        print(" Không có dữ liệu để xử lý.")
+        print(" Khong co du lieu de xu ly.")
         return df
 
-    df["created_at"] = pd.to_datetime(df["created_at"]).dt.date  # Chỉ lấy ngày, bỏ giờ
+    df["created_at"] = pd.to_datetime(df["created_at"], format="ISO8601", errors="coerce").dt.date # Chỉ lấy ngày, bỏ giờ
 
     #  Gộp dữ liệu theo ngày (tổng số tiền chi tiêu mỗi ngày)
     df = df.groupby("created_at", as_index=False).agg({"amount": "sum"})
@@ -111,7 +111,7 @@ def preprocess_transactions(user_id: int) -> pd.DataFrame:
     df_full["y"] = df_full["y"].astype(int)
 
     # Hiển thị thông tin
-    print("Dữ liệu sau khi xử lý:")
+    print("Du lieu sau khi xu ly:")
     print(df_full.tail())
 
     return df_full
@@ -150,7 +150,7 @@ def predict_transaction():
         
         if df_processed.empty or (df_processed.shape[0]) < 30:
             print(len(df_processed))
-            return jsonify({"message":"Dữ liệu tài chính hiện tại của bạn không đủ để dự đoán hãy giao dịch ít nhất 1 tháng!"}), 404
+            return jsonify({"message":"Du lieu tai chinh hien tai cua ban khong du de du doan hay giao dich it nhat 1 thang!"}), 404
         model = get_model()
         model.fit(df_processed)
 
@@ -161,7 +161,7 @@ def predict_transaction():
 
         next_month_spending = forecast.tail(30)["yhat"].sum()
 
-        print(f" Tổng chi tiêu dự đoán trong tháng tới: {next_month_spending:,.0f} VNĐ")
+        print(f" Tong chi tieu du doan trong thang toi: {next_month_spending:,.0f} VND")
 
         model.plot(forecast)
         # Tạo hình ảnh
@@ -198,7 +198,7 @@ def predict_user_financial():
         df_prophet = get_user_financial_data(user_id=user_id)
         
         if df_prophet.empty or (df_prophet.shape[0]) < 30:
-            return jsonify({"message":"Dữ liệu tài chính hiện tại của bạn không đủ để dự đoán hãy giao dịch ít nhất 1 tháng!"}), 404
+            return jsonify({"message":"Du lieu tai chiunh hien tai cua ban khong du de du doan hay giao dich it nhat 1 thang!"}), 404
         df_prophet.rename(columns={"balance": "y"}, inplace=True)
         
         train_size = int(len(df_prophet) * 0.8)
