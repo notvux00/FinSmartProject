@@ -1,0 +1,116 @@
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  font-family: inherit;
+}
+
+body {
+  background-color: #e4e9ff;
+  color: black;
+  padding: 12px;
+  font-family: Arial, sans-serif;
+}
+
+/* Main Layout */
+.main {
+  display: grid;
+  grid-template-columns: 64px 1fr;
+  gap: 32px;
+  height: 900px;
+}
+
+aside {
+  background-color: white;
+  padding: 16px;
+  border-radius: 12px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+section {
+  padding: 16px;
+  border-radius: 12px;
+  margin-right: 20px;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  background-color: white;
+  height: 100%;
+  position: relative;
+}
+
+/* Elements */
+.logo {
+  margin-bottom: 30px;
+}
+
+ul {
+  display: flex;
+  flex-direction: column;
+  flex-grow: 1;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+  list-style: none;
+  gap: 25px;
+}
+
+.menu-item {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.menu-item:last-child {
+  margin-top: auto;
+}
+
+.button {
+  background-color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.chat-window {
+  flex-grow: 1;
+  overflow-y: auto;
+  border-radius: 15px;
+  padding: 10px;
+}
+
+.chat-input {
+  display: flex;
+  gap: 16px;
+  background-color: #e4e9ff;
+  border-radius: 15px;
+  padding: 10px;
+  position: absolute;
+  bottom: 10px;
+  left: 0;
+  right: 0;
+  margin: 0 16px;
+}
+
+.chat-input-box {
+  flex-grow: 1;
+  font-size: 25px;
+  padding: 12px;
+  border: none;
+  border-radius: 15px;
+  background-color: #e4e9ff;
+}
+
+.in-chat-button {
+  width: 50px;
+  height: 50px;
+  background-color: white;
+  border: none;
+  border-radius: 50%;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}

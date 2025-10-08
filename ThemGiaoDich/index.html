@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link href="styles.css" rel="stylesheet" />
+    <title>Finsmart</title>
+  </head>
+  <body>
+    <main class="main">
+      <aside>
+        <ul>
+          <img class="logo" src="img/logo.jpg" height="50" width="50" />
+          <li class="menu-item">
+            <button class="button" onclick="alert('Home!')" }>
+              <img src="img/home.jpg" height="32" width="32" />
+            </button>
+          </li>
+          <li class="menu-item">
+            <button class="button" onclick="alert('New!')" }>
+              <img src="img/new.jpg" height="30" width="30" />
+            </button>
+          </li>
+          <li class="menu-item">
+            <button class="button" onclick="alert('AI!')" }>
+              <img src="img/AI-icon.jpg" height="33" width="33" />
+            </button>
+          </li>
+          <li class="menu-item">
+            <button class="button" onclick="alert('Profile!')" }>
+              <img src="img/profile.jpg" height="32" width="27" />
+            </button>
+          </li>
+        </ul>
+      </aside>
+
+      <section>
+        <div class="categories">
+          <button onclick="alert('Thu tiền!')" }>Thu tiền</button>
+          <button onclick="alert('Chi tiền!')" }>Chi tiền</button>
+          <button onclick="alert('Chuyển tiền!')" }>Chuyển tiền</button>
+        </div>
+        <input class="input" placeholder="Nhập số tiền" />
+        <div class="select-categoryies">
+          <input class="input-category" placeholder="Chọn danh mục..." />
+          <div class="select-categoryies">
+            <div class="category-list">
+              <button class="category">&#x1F354; Ăn uống</button>
+              <button class="category">&#x1F6CD; Mua sắm</button>
+              <button class="category">&#x1F3E0; Sinh hoạt</button>
+              <button class="category">&#x1F3A7; Giải trí</button>
+            </div>
+            <div class="subcategory-list">
+              <button class="subcategory">&#x2615; Cafe</button>
+              <button class="subcategory">&#x1F95E; Ăn sáng</button>
+              <button class="subcategory">&#x1F37D; Ăn trưa</button>
+              <button class="subcategory">&#x1F372; Ăn tối</button>
+            </div>
+          </div>
+        </div> 
+          <div class="input-container">
+            <img class="note-icon" src="img/note.jpg" height="50" width="50" />
+            <input type="text" class="input note-input" placeholder="Nhập ghi chú...">
+          </div>          
+        <input type="date" class="date-picker"></input>
+        <div class="confirm-container">
+          <button class="confirm" onclick="alert('Xác nhận!')">Xác nhận</button>
+      </section>
+    </main>
+  </body>
+</html>
