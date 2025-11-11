@@ -10,14 +10,14 @@ jobs:
   build-test:
     runs-on: ubuntu-latest
     env:
-      CI: true
+      # Chúng ta vẫn cần key này cho các lệnh build
       REACT_APP_SECRET_KEY: mock-secret-key
       
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      # --- Cài đặt Node.js ---
+      # --- 1. Cài đặt Môi trường Node.js ---
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
@@ -27,35 +27,28 @@ jobs:
       - name: Install Node dependencies
         run: npm install
 
-      # --- Cài đặt Python (Bước mới) ---
+      # --- 2. Cài đặt Môi trường Python ---
       - name: Setup Python
         uses: actions/setup-python@v5
         with:
-          python-version: '3.11' # Giả sử bạn dùng Python 3.11
-          cache: 'pip' # Cache các gói Python
+          python-version: '3.11'
+          cache: 'pip'
 
       - name: Install Python dependencies
-        # Cài đặt các thư viện từ tệp requirements.txt
+        # Đảm bảo bạn đã tạo tệp requirements.txt
         run: pip install -r requirements.txt
 
-      # --- Các bước Build và Test (Giữ nguyên) ---
+      # --- 3. Chạy Build (Tùy chọn, nhưng nên có) ---
+      # (Lệnh build mới trong package.json đã bao gồm CI=false)
       - name: Build application
-        run: CI=false npm run build
+        run: npm run build
 
+      # --- 4. Chạy Unit Tests ---
+      # (Lệnh test:ci đã bao gồm --passWithNoTests)
       - name: Run unit tests
-        run: npm run test:ci # Lệnh này đã bao gồm --passWithNoTests từ package.json
+        run: npm run test:ci
 
-      # --- Chạy E2E Test (Đây là phần quan trọng nhất) ---
-      
-      - name: Start Python backend in background
-        # Khởi động máy chủ AI (cổng 5000) ở chế độ nền
-        # Dấu & ở cuối là rất quan trọng để nó chạy ngầm
-        run: python src/backend/ai.py &
-
+      # --- 5. Chạy E2E Tests ---
+      # Lệnh này bây giờ sẽ tự động khởi động và chờ cả 2 máy chủ
       - name: Run end-to-end tests
-        env:
-          BROWSER: none
-        # Lệnh e2e sẽ tự động chạy (như trong package.json)
-        # Nó sẽ khởi động cổng 3000 và chờ.
-        # Lần này, cổng 3000 sẽ khởi động thành công vì cổng 5000 đã chạy.
         run: npm run e2e
