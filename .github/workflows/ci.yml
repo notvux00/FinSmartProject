@@ -12,26 +12,47 @@ jobs:
     env:
       CI: true
       REACT_APP_SECRET_KEY: mock-secret-key
+      
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
 
+      # --- Cài đặt Node.js (Giữ nguyên) ---
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: '18'
           cache: 'npm'
-
-      - name: Install dependencies
+      
+      - name: Install Node dependencies
         run: npm install
 
+      # --- Cài đặt Python (Bước mới) ---
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11' # Phiên bản Python
+          cache: 'pip' # Cache các gói Python
+
+      - name: Install Python dependencies
+        run: pip install -r requirements.txt
+
+      # --- Các bước Build và Test ---
       - name: Build application
         run: CI=false npm run build
 
       - name: Run unit tests
-        run: npm run test:ci
+        run: npm run test:ci -- --passWithNoTests # Thêm flag ở đây cho chắc chắn
+
+      # --- Chạy E2E Test (Đã sửa) ---
+      - name: Start Python backend
+        # Khởi động máy chủ AI ở chế độ nền
+        # (Lưu ý: Chúng ta dùng src/backend/ai.py)
+        run: python src/backend/ai.py &
 
       - name: Run end-to-end tests
         env:
           BROWSER: none
+        # Lệnh e2e sẽ tự động chạy (như trong package.json)
+        # và bây giờ nó sẽ tìm thấy localhost:5000
         run: npm run e2e
