@@ -17,7 +17,7 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      # --- Cài đặt Node.js (Giữ nguyên) ---
+      # --- Cài đặt Node.js ---
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
@@ -31,28 +31,31 @@ jobs:
       - name: Setup Python
         uses: actions/setup-python@v5
         with:
-          python-version: '3.11' # Phiên bản Python
+          python-version: '3.11' # Giả sử bạn dùng Python 3.11
           cache: 'pip' # Cache các gói Python
 
       - name: Install Python dependencies
+        # Cài đặt các thư viện từ tệp requirements.txt
         run: pip install -r requirements.txt
 
-      # --- Các bước Build và Test ---
+      # --- Các bước Build và Test (Giữ nguyên) ---
       - name: Build application
         run: CI=false npm run build
 
       - name: Run unit tests
-        run: npm run test:ci -- --passWithNoTests # Thêm flag ở đây cho chắc chắn
+        run: npm run test:ci # Lệnh này đã bao gồm --passWithNoTests từ package.json
 
-      # --- Chạy E2E Test (Đã sửa) ---
-      - name: Start Python backend
-        # Khởi động máy chủ AI ở chế độ nền
-        # (Lưu ý: Chúng ta dùng src/backend/ai.py)
+      # --- Chạy E2E Test (Đây là phần quan trọng nhất) ---
+      
+      - name: Start Python backend in background
+        # Khởi động máy chủ AI (cổng 5000) ở chế độ nền
+        # Dấu & ở cuối là rất quan trọng để nó chạy ngầm
         run: python src/backend/ai.py &
 
       - name: Run end-to-end tests
         env:
           BROWSER: none
         # Lệnh e2e sẽ tự động chạy (như trong package.json)
-        # và bây giờ nó sẽ tìm thấy localhost:5000
+        # Nó sẽ khởi động cổng 3000 và chờ.
+        # Lần này, cổng 3000 sẽ khởi động thành công vì cổng 5000 đã chạy.
         run: npm run e2e
