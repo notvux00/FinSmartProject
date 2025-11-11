@@ -34,7 +34,7 @@
     "eject": "react-scripts eject",
     "test:ci": "react-scripts test --watchAll=false --passWithNoTests",
     "cy:run": "cypress run",
-    "e2e": "start-server-and-test start http://localhost:3000 cy:run"
+    "e2e": "start-server-and-test \"CI=false npm run start\" http://localhost:3000 cy:run"
   },
   "eslintConfig": {
     "extends": [
