@@ -10,8 +10,10 @@ jobs:
   build-test:
     runs-on: ubuntu-latest
     env:
-      # Chúng ta vẫn cần key này cho các lệnh build
+      CI: true
       REACT_APP_SECRET_KEY: mock-secret-key
+      REACT_APP_SUPABASE_URL: "http://mock.supabase.co"
+      REACT_APP_SUPABASE_KEY: "mock-supabase-key"
       
     steps:
       - name: Checkout repository
