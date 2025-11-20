@@ -11,7 +11,12 @@ jobs:
     runs-on: ubuntu-latest
     env:
       CI: true
-      REACT_APP_SECRET_KEY: mock-secret-key
+      # Sử dụng mock key cho các biến không quan trọng trong test
+      REACT_APP_SECRET_KEY: mock-secret-key 
+      # Lấy từ GitHub Secrets
+      REACT_APP_SUPABASE_URL: ${{ secrets.REACT_APP_SUPABASE_URL }}
+      REACT_APP_SUPABASE_KEY: ${{ secrets.REACT_APP_SUPABASE_KEY }}
+      REACT_APP_SUPABASE_ANON_KEY: ${{ secrets.REACT_APP_SUPABASE_KEY }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -24,6 +29,10 @@ jobs:
 
       - name: Install dependencies
         run: npm install
+
+      # Thêm bước này nếu Cypress cần verify
+      - name: Install Cypress binary
+        run: npx cypress install
 
       - name: Build application
         run: npm run build
