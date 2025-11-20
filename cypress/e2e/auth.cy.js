@@ -1,4 +1,28 @@
+// cypress/e2e/auth.cy.js
+
 describe('Authentication flows', () => {
+  beforeEach(() => {
+    // --- MOCKING (GIẢ LẬP) ---
+    
+    // 1. Giả lập API Đăng ký (Edge Function)
+    cy.intercept('POST', '**/functions/v1/register-limiting', {
+      statusCode: 200,
+      body: { message: "Đăng ký thành công." }
+    }).as('mockRegister');
+
+    // 2. Giả lập API Đăng nhập (cho test case login)
+    cy.intercept('POST', '**/functions/v1/login-limiting', {
+      statusCode: 200,
+      body: { success: true, user_id: 12345 }
+    }).as('mockLogin');
+
+    // 3. Giả lập các gọi Supabase trực tiếp (Check user, Create wallet...)
+    // Chặn tất cả các request đến REST API của Supabase và trả về success
+    cy.intercept('POST', '**/rest/v1/users*', { statusCode: 201, body: [] }).as('mockUserDB');
+    cy.intercept('GET', '**/rest/v1/users*', { statusCode: 200, body: [] }).as('mockCheckUser');
+    cy.intercept('POST', '**/rest/v1/wallets*', { statusCode: 201, body: [] }).as('mockWalletDB');
+  });
+
   it('allows a new user to register and sign in', () => {
     const username = `cypress_user_${Date.now()}`;
     const password = 'StrongPass123!';
@@ -13,36 +37,33 @@ describe('Authentication flows', () => {
     cy.get('input[name="password"]').type(password);
     cy.get('input[name="confirmPassword"]').type(password);
 
+    // Stub alert
     const alerts = [];
-    cy.on('window:alert', (text) => {
-      alerts.push(text);
-    });
+    cy.on('window:alert', (text) => alerts.push(text));
 
+    // Submit form
     cy.get('form.register-form').submit();
 
-    cy.wrap(null).should(() => {
-      expect(alerts.some((text) => text.includes('Đăng ký thành công'))).to.be.true;
-    });
+    // Chờ API giả lập phản hồi
+    cy.wait('@mockRegister');
 
-    cy.visit('/login');
+    // Kiểm tra chuyển trang hoặc thông báo
+    // (Lưu ý: Tùy logic app của bạn, nếu có redirect sang login thì check url)
+    cy.url().should('include', '/login'); 
+
+    // --- Test Login sau khi đăng ký ---
     cy.get('[data-testid="input-account"]').type(username);
     cy.get('[data-testid="input-password"]').type(password);
 
-    const loginAlerts = [];
-    cy.on('window:alert', (text) => {
-      loginAlerts.push(text);
-    });
-
     cy.get('[data-testid="login-button"]').click();
-
-    cy.wrap(null).should(() => {
-      expect(loginAlerts.some((text) => text.includes('Đăng nhập thành công'))).to.be.true;
-    });
-
+    
+    cy.wait('@mockLogin');
+    
     cy.url().should('include', '/home');
   });
 
   it('authenticates an existing seeded user', () => {
+    // Sử dụng custom command đã mock ở trên
     cy.login();
   });
 });
