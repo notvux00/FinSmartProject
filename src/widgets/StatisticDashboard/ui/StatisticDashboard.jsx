@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { Pie, Bar, Line } from "react-chartjs-2";
+import "chart.js/auto";
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
 
