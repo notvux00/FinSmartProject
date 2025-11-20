@@ -10,6 +10,9 @@ describe('Authentication flows', () => {
       body: { message: "Đăng ký thành công." }
     }).as('mockRegister');
 
+    // Đợi 1s để trang web reload xong theo logic của RegisterPage
+    cy.wait(1000);
+
     // 2. Giả lập API Đăng nhập (cho test case login)
     cy.intercept('POST', '**/functions/v1/login-limiting', {
       statusCode: 200,
