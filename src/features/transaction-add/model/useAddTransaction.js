@@ -1,150 +1,86 @@
-/**
- * Transaction-add feature model layer
- * Custom hooks for transaction creation logic
- */
-import { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { addTransactionAPI } from "../api/addTransaction";
 import { userRepository } from "../../../entities/user";
 import { TRANSACTION_TYPES } from "../../../shared/config";
+import { QUERY_KEYS } from "../../../shared/config/queryKeys";
+
+const SUPABASE_PROJECT_URL = process.env.REACT_APP_SUPABASE_URL;
+const SAGA_FUNCTION_URL = `${SUPABASE_PROJECT_URL}/functions/v1/create-transaction-saga`;
 
 export const useAddTransaction = (userId) => {
   const navigate = useNavigate();
-  const [limits, setLimits] = useState([]);
-  const [loading, setLoading] = useState(false);
+  const queryClient = useQueryClient();
 
-  const fetchLimits = useCallback(async () => {
-    try {
-      const data = await addTransactionAPI.fetchLimits(userId);
-      setLimits(data);
-    } catch (error) {
-      console.error("Error fetching limits:", error.message);
-    }
-  }, [userId]);
+  // Lấy danh sách Hạn mức
+  const { data: limits = [] } = useQuery({
+    queryKey: QUERY_KEYS.LIMITS(userId),
+    queryFn: () => addTransactionAPI.fetchLimits(userId),
+    enabled: !!userId,
+    staleTime: 5 * 60 * 1000,
+  });
 
-  useEffect(() => {
-    if (userId) {
-      fetchLimits();
-    }
-  }, [userId, fetchLimits]);
+  // Mutation: SỬA ĐỔI ĐỂ GỌI EDGE FUNCTION
+  const mutation = useMutation({
+    mutationFn: async (transactionData) => {
+      if (!userId) throw new Error("Không xác thực được người dùng.");
 
-  const addTransaction = async (transactionData) => {
-    if (!userId) {
-      alert("Không xác thực được người dùng. Vui lòng đăng nhập lại.");
-      navigate("/login");
-      return;
-    }
-
-    const amountNumber = parseFloat(transactionData.amount);
-
-    if (
-      !transactionData.amount ||
-      !transactionData.category ||
-      !transactionData.date
-    ) {
-      alert("Vui lòng nhập đầy đủ số tiền, chọn hạng mục và ngày giao dịch.");
-      return;
-    }
-
-    if (isNaN(amountNumber) || amountNumber <= 0) {
-      alert("Số tiền không hợp lệ. Vui lòng nhập số lớn hơn 0.");
-      return;
-    }
-
-    // Validate date
-    const selectedDate = new Date(transactionData.date);
-    const currentDate = new Date();
-    if (selectedDate > currentDate) {
-      alert("Ngày giao dịch không hợp lệ. Vui lòng chọn lại ngày.");
-      return;
-    }
-
-    setLoading(true);
-
-    try {
-      // Get wallet information
+      // Lấy wallet_id
       const walletInfo = await userRepository.getWalletId(userId);
       const walletId = walletInfo.wallet_id;
-      const currentBalance = walletInfo.balance;
 
-      // Prepare transaction data
-      const finalTransactionData = {
+      // Chuẩn bị payload gửi lên Edge Function
+      const payload = {
         user_id: userId,
         wallet_id: walletId,
         category: transactionData.category,
-        amount: amountNumber,
-        created_at: new Date(transactionData.date).toISOString(),
+        amount: parseFloat(transactionData.amount),
+        date: new Date(transactionData.date).toISOString(),
         note: transactionData.note || null,
+        type: transactionData.type, // 'thu' hoặc 'chi'
+        limit_id: transactionData.limitId || null
       };
 
-      let newBalance;
-      const transactionType = transactionData.type;
+      const session = JSON.parse(localStorage.getItem('sb-nvbdupcoynrzkrwyhrjc-auth-token') || '{}'); 
+      
+      const token = process.env.REACT_APP_SUPABASE_ANON_KEY; 
 
-      if (transactionType === TRANSACTION_TYPES.INCOME) {
-        newBalance = currentBalance + amountNumber;
-      } else {
-        newBalance = currentBalance - amountNumber;
+      const response = await fetch(SAGA_FUNCTION_URL, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${token}`
+        },
+        body: JSON.stringify(payload),
+      });
 
-        // Check if balance is sufficient
-        if (newBalance < 0) {
-          throw new Error("Số dư không đủ để thực hiện giao dịch này.");
-        }
+      const result = await response.json();
 
-        // Handle limit updates if applicable
-        if (transactionData.limitId) {
-          const selectedLimit = limits.find(
-            (limit) => limit.limit_id === transactionData.limitId
-          );
-
-          if (selectedLimit) {
-            const newUsedAmount = (selectedLimit.used || 0) + amountNumber;
-
-            // Check if limit would be exceeded
-            if (newUsedAmount > selectedLimit.limit_amount) {
-              alert(
-                `Hạn mức "${selectedLimit.limit_name}" đã vượt quá giới hạn ${selectedLimit.limit_amount}. Vui lòng chọn danh mục khác hoặc hạn mức khác`
-              );
-              return;
-            }
-
-            // Update limit usage
-            await addTransactionAPI.updateLimitUsage(
-              selectedLimit.limit_id,
-              newUsedAmount
-            );
-            finalTransactionData.limit_id = transactionData.limitId;
-          }
-        }
+      if (!response.ok) {
+        throw new Error(result.error || "Lỗi khi xử lý giao dịch.");
       }
 
-      // Add transaction to database
-      await addTransactionAPI.addTransaction(
-        finalTransactionData,
-        transactionType
-      );
-
-      // Update wallet balance
-      await userRepository.updateWalletBalance(walletId, newBalance);
-
-      alert("Thêm giao dịch thành công.");
       return true;
-    } catch (error) {
-      console.error("Lỗi khi xử lý giao dịch:", error.message || error);
-      alert(
-        `Đã xảy ra lỗi: ${
-          error.message || "Thêm giao dịch không thành công. Vui lòng thử lại."
-        }`
-      );
-      return false;
-    } finally {
-      setLoading(false);
-    }
-  };
+    },
+
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: QUERY_KEYS.TRANSACTIONS(userId) });
+      queryClient.invalidateQueries({ queryKey: QUERY_KEYS.USER(userId) });
+      queryClient.invalidateQueries({ queryKey: QUERY_KEYS.LIMITS(userId) });
+
+      alert("Thêm giao dịch thành công (Secured by Saga).");
+    },
+    onError: (error) => {
+      console.error("Lỗi thêm giao dịch:", error);
+      alert(`Thất bại: ${error.message}`);
+    },
+  });
 
   return {
     limits,
-    addTransaction,
-    loading,
-    refetchLimits: fetchLimits,
+    addTransaction: mutation.mutate,
+    loading: mutation.isPending,
+    refetchLimits: () =>
+      queryClient.invalidateQueries({ queryKey: QUERY_KEYS.LIMITS(userId) }),
   };
 };

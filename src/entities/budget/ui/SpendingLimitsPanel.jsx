@@ -1,7 +1,3 @@
-/**
- * Budget entity UI component
- * Right panel component for displaying spending limits
- */
 import React, { useState, useRef } from 'react';
 import BudgetForm from './BudgetForm';
 
@@ -15,8 +11,9 @@ const SpendingLimitsPanel = ({
   const [editingBudget, setEditingBudget] = useState(null);
   const formRef = useRef(null);
 
-  const handleAddBudget = async (budgetData) => {
+  const handleAddBudget = async (_, budgetData) => {
     try {
+      // Truyền đúng budgetData vào hook
       await onAddBudget(budgetData);
       setShowAddForm(false);
     } catch (error) {
