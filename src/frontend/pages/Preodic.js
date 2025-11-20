@@ -13,11 +13,11 @@ function Preodic() {
   const { userId } = useAuth();
 
   // State
-  const [balance, setBalance] = useState(0); // Đã sửa lỗi cú pháp useState
+  const [, setBalance] = useState(0); // Đã sửa lỗi cú pháp useState
   const [walletId, setWalletId] = useState(0);
   const [periodicData, setPeriodicData] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
+  const [, setError] = useState(null);
   
   // Form State
   const [showForm, setShowForm] = useState(false);
