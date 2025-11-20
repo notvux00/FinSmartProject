@@ -1,4 +1,3 @@
-import { useNavigate } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { addTransactionAPI } from "../api/addTransaction";
 import { userRepository } from "../../../entities/user";
