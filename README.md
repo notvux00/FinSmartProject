@@ -1,4 +1,4 @@
-# Dự án Xử lý Ảnh OCR và Dịch Thuật (INT3105 - Software Architecture Project)
+# Dự án Quản lý tài chính cá nhân FinSmart (INT3105 - Software Architecture Project)
 
 ## Mục lục
 1. [Mô tả Dự án](#1-mô-tả-dự-án)
