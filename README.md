@@ -100,29 +100,26 @@ Dự án đã trải qua các giai đoạn phát triển kiến trúc (Refactori
 
 ### **4.2. Khởi Chạy Hệ Thống**
 
-**Cài đặt dependencies cho Frontend:**  
-Bash  
+1. **Cài đặt dependencies cho Frontend:**  
+```Bash  
 npm install
+```
 
-1.   
 2. **Cấu hình biến môi trường:**  
-   * Đổi tên .env.development (hoặc tạo mới) và điền các thông tin: VITE\_SUPABASE\_URL, VITE\_SUPABASE\_KEY.
+* Đổi tên .env.development (hoặc tạo mới) và điền các thông tin: VITE\_SUPABASE\_URL, VITE\_SUPABASE\_KEY.
 
-**Khởi chạy Frontend:**  
-Bash  
+3. **Khởi chạy Frontend:**  
+```Bash  
 npm start  
-\# Hoặc nếu dùng vite:  
-npm run dev
+```
+* Ứng dụng sẽ chạy tại http://localhost:3000 (hoặc cổng tương ứng).
 
-3. Ứng dụng sẽ chạy tại http://localhost:3000 (hoặc cổng tương ứng).
-
-**Khởi chạy Backend AI (Python \- Optional nếu dùng Edge Function):**  
-Bash  
+4. **Khởi chạy Backend AI (Python \- Optional nếu dùng Edge Function):**  
+```Bash  
 cd src/backend  
 pip install \-r requirements.txt  
 python ai.py
-
-4. 
+```
 
 ### **4.3. Sử Dụng Chức Năng Upload**
 
@@ -143,14 +140,14 @@ python ai.py
 
 *Lưu ý: Dự án hiện tại đã tích hợp thêm Locust (locustfile.py) để kiểm thử tải cho các dịch vụ AI và API. Tuy nhiên, quy trình vẫn tuân theo nguyên lý kiểm thử tải.*
 
-1. Điều hướng đến thư mục test: cd tests  
-2. Cài đặt Locust (nếu chưa có): pip install locust
+1. Điều hướng đến thư mục test: ```cd tests```
+2. Cài đặt Locust (nếu chưa có): ```pip install locust```
 
-Chạy Locust:  
-Bash  
+3. Chạy Locust:  
+```Bash  
 locust \-f locustfile.py
+```
 
-3.   
 4. Truy cập giao diện Web Locust tại http://localhost:8089 để cấu hình số lượng Users và Spawn rate.  
    (Nếu sử dụng k6 như mẫu cũ, chạy lệnh: k6 run test/load-test.js nếu file tồn tại)
 
