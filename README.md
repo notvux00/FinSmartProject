@@ -1,198 +1,169 @@
-# **Dự án Quản lý Tài chính Cá nhân \- Finsmart (INT3105 \- Software Architecture Project)**
+#  Finsmart — Personal Finance Management System
 
-## Mục lục
-1. [Mô tả Dự án](#1-mô-tả-dự-án)
-2. [Các Nhiệm Vụ Đã Hoàn Thành](#2-các-nhiệm-vụ-đã-hoàn-thành)
-   - [2.1. Quá Trình Phát Triển Kiến Trúc và Các Phiên Bản](#21-quá-trình-phát-triển-kiến-trúc-và-các-phiên-bản)
-3. [Kiến trúc Triển Khai Hiện Tại (Message Queue, Cache và Multiple Workers)](#3-kiến-trúc-triển-khai-hiện-tại-message-queue-cache-và-multiple-workers)
-4. [Cách Sử Dụng](#4-cách-sử-dụng)
-   - [4.1. Yêu Cầu Hệ Thống](#41-yêu-cầu-hệ-thống)
-   - [4.2. Khởi Chạy Hệ Thống](#42-khởi-chạy-hệ-thống)
-   - [4.3. Sử Dụng Chức Năng Upload](#43-sử-dụng-chức-năng-upload)
-   - [4.4. Truy Cập Các Công Cụ Giám Sát](#44-truy-cập-các-công-cụ-giám-sát)
-   - [4.5. Chạy Kiểm Thử Tải (k6)](#45-chạy-kiểm-thử-tải-k6)
-   - [4.6. Dừng Hệ Thống](#46-dừng-hệ-thống)
-5. [So sánh hiệu năng](#5-so-sánh-hiệu-năng)
-   - [5.1 Mô tả kịch bản kiểm thử](#51-mô-tả-kịch-bản-kiểm-thử)
-   - [5.2 Mô tả kết quả](#52-mô-tả-kết-quả)
-   - [5.3 Kết luận](#53-kết-luận)
-6. [Thành Viên Nhóm](#6-thành-viên-nhóm)
+> **Bài tập lớn môn Kiến trúc phần mềm – INT3105 2**  
+> **Đề tài:** Cải tiến hệ thống quản lý tài chính cá nhân.
+---
 
-## **1. Mô tả Dự án**
+## 👥 Nhóm 18
+- **Nguyễn Trung Hiếu - 23020664**
+- **Đào Hồng Lĩnh - 23021613**
+- **Nguyễn Anh Tuấn - 23021707**
+- **Lê Duy Vũ - 23021751**
 
-Dự án Finsmart là một hệ thống quản lý tài chính cá nhân thông minh, được thiết kế để giúp người dùng theo dõi thu chi, lập ngân sách và nhận tư vấn tài chính từ AI. Hệ thống được tái cấu trúc từ mô hình Monolithic sang kiến trúc hướng dịch vụ (Service-oriented) sử dụng Supabase (Backend-as-a-Service), tích hợp các mẫu thiết kế hiện đại như Feature-Sliced Design (FSD) cho Frontend và Saga Pattern cho xử lý giao dịch phân tán.
+---
 
-Hệ thống tập trung giải quyết các bài toán về bảo mật (Auth), hiệu năng (Caching), tính toàn vẹn dữ liệu (Transaction Integrity) và trải nghiệm người dùng tối ưu.
+## 📌 Bản gốc
+- GitHub Repository: https://github.com/natuan05/FinSmartProject-FSD
 
-## **2. Các Nhiệm Vụ Đã Hoàn Thành**
+---
 
-Dựa trên kế hoạch cải thiện toàn diện, nhóm đã hoàn thành các nhiệm vụ trọng tâm sau:
+## 🧩 Chức năng chính của bản gốc
 
-* **Bảo mật & Xác thực (Task 1):**  
-  * Chuyển đổi từ localStorage sang **Token-based Authentication (JWT)** kết hợp với **HttpOnly Cookies**.  
-  * Xây dựng các Edge Function để xử lý đăng nhập/đăng ký, đảm bảo Frontend không lưu trữ thông tin nhạy cảm.  
-  * Cập nhật ProtectedRoute để kiểm tra cookie thay vì token rác ở client.  
-* **Tối ưu hóa Hiệu năng Frontend (Task 2):**  
-  * Triển khai **Client-Side Caching** sử dụng **React Query**.  
-  * Áp dụng **Cache-Aside Pattern**: Dữ liệu (như danh sách giao dịch, báo cáo) được cache tại client để giảm thiểu request dư thừa lên server và tăng tốc độ phản hồi khi điều hướng trang.  
-* **Kiến trúc Frontend & Codebase:**  
-  * Tái cấu trúc toàn bộ mã nguồn theo kiến trúc **Feature-Sliced Design (FSD)** (thể hiện qua các thư mục app, pages, widgets, features, entities, shared) giúp code dễ bảo trì và mở rộng.  
-  * Áp dụng **Repository Pattern** (userRepository, transactionRepository...) để tách biệt logic gọi API khỏi logic giao diện.  
-* **Xử lý Giao dịch Phức tạp & Backend (Task 5, 6, 7):**  
-  * **Tối ưu hóa Báo cáo:** Sử dụng SQL View và Edge Functions để tính toán trước các chỉ số tài chính nặng.  
-  * **Giao dịch Bất đồng bộ & Toàn vẹn:** Triển khai **Saga Pattern** (supabase/functions/create-transaction-saga) để đảm bảo tính nhất quán của dữ liệu khi thực hiện các giao dịch phức tạp (ví dụ: tạo giao dịch đồng thời cập nhật số dư và hạn mức chi tiêu).  
-* **Tích hợp AI & Proxy:**  
-  * Xây dựng **Gemini Proxy** (supabase/functions/gemini-proxy) để bảo vệ API Key và xử lý logic tư vấn tài chính thông minh.  
-* **DevOps & Giám sát (Task 3, 4, 9):**  
-  * Thiết lập **CI/CD Pipeline** (workflows/ci.yml) để tự động hóa quy trình kiểm thử và triển khai.  
-  * Xây dựng hệ thống giám sát sức khỏe (System Health Check) và hiển thị trạng thái hệ thống ngay trên giao diện người dùng.  
-  * Viết Unit Test và Integration Test cho các logic quan trọng (Backend AI, Model Evaluation).
+Hệ thống Finsmart bao gồm:
+- Ghi và tra cứu lịch sử thu chi.
+- Thêm hạn mức chi tiêu.
+- Thêm và quản lý các giao dịch định kì.
+- Thống kê chi tiêu cá nhân bằng biểu đồ.
+- Thiết lập các danh mục tiết kiệm.
 
-## **2.1. Quá Trình Phát Triển Kiến Trúc và Các Phiên Bản**
+---
 
-Dự án đã trải qua các giai đoạn phát triển kiến trúc (Refactoring) dựa trên các nhiệm vụ được phân chia:
+# 🚀 Các cải tiến & tính năng mới
 
-* **Giai đoạn 1: Monolithic & Basic Auth (Phiên bản cũ):**  
-  * Lưu trữ token ở localStorage (dễ bị XSS).  
-  * Logic xử lý nằm lẫn lộn trong các component React.  
-  * Hiệu năng thấp do gọi API liên tục mỗi khi chuyển trang.  
-* **Giai đoạn 2: Security & Architecture Standard (Feature-Sliced Design):**  
-  * **Thay đổi:** Áp dụng FSD cho Frontend và chuyển sang HttpOnly Cookie cho Auth.  
-  * **Lợi ích:** Khắc phục lỗ hổng bảo mật nghiêm trọng. Mã nguồn được tổ chức rõ ràng theo các tầng (layer) và lát cắt (slice), giúp nhóm dễ dàng làm việc song song (Người 2 làm Frontend, Người 4 làm Security).  
-* **Giai đoạn 3: Performance & Caching:**  
-  * **Thay đổi:** Tích hợp React Query cho Client-side Caching.  
-  * **Lợi ích:** Giảm tải cho Database (Supabase) và tăng trải nghiệm người dùng mượt mà.  
-* **Giai đoạn 4: Reliability & Distributed Systems (Hiện tại):**  
-  * **Thay đổi:** Triển khai Saga Pattern cho các giao dịch tài chính quan trọng.  
-  * **Lợi ích:** Đảm bảo dữ liệu luôn đúng đắn (Consistency). Nếu một bước trong chuỗi giao dịch thất bại (ví dụ: trừ tiền thất bại), hệ thống sẽ tự động rollback các bước trước đó.
+## **1. Nguyễn Trung Hiếu**
 
-## **3. Kiến trúc Triển Khai Hiện Tại (Message Queue, Cache và Multiple Workers)**
+---
 
-*Lưu ý: Trong bối cảnh dự án Finsmart sử dụng Supabase và Serverless, kiến trúc "Multiple Workers" và "Queue" được hiện thực hóa thông qua cơ chế Edge Functions và Database Triggers/Queues của nền tảng đám mây, kết hợp với Client-side Cache.*
+# A. Testing & CI/CD cho FinSmart
 
-**Các Pattern chính được sử dụng:**
+### **1. Vấn đề (Problem)**
+- **Thiếu kiểm thử tự động:** Trước khi cải tiến, hệ thống gần như không có test tự động. Khi sửa code frontend, các bạn phải tự mở app, click từng màn hình (Login, Giao dịch, Định kỳ, Tiết kiệm, …) để kiểm tra → dễ sót lỗi, khó lặp lại.
+- **CI/CD chưa kiểm soát được chất lượng thay đổi:** Nếu một commit làm hỏng luồng nghiệp vụ quan trọng (ví dụ tạo giao dịch, thống kê, tiết kiệm), lỗi chỉ được phát hiện khi chạy demo hoặc khi người dùng phàn nàn.
+- **Phụ thuộc vào Supabase thật khi test:** Các luồng đăng ký/đăng nhập, tạo giao dịch, gọi Edge Functions… đang phụ thuộc trực tiếp vào Supabase. Nếu mạng chậm, Supabase lỗi tạm thời, hoặc dữ liệu bị thay đổi → test tay dễ cho kết quả không ổn định, khó tái hiện.
 
-1. **Feature-Sliced Design (FSD):** Kiến trúc tổ chức mã nguồn Frontend chia nhỏ ứng dụng theo nghiệp vụ (User, Transaction, Budget...) thay vì kỹ thuật.  
-2. **Repository Pattern:** Lớp trung gian src/entities/\*/api/\*Repository.js giúp chuẩn hóa việc truy xuất dữ liệu, dễ dàng thay đổi nguồn dữ liệu mà không ảnh hưởng tới UI.  
-3. **Saga Pattern (Orchestration):** Được sử dụng trong create-transaction-saga. Một function điều phối (Orchestrator) sẽ gọi lần lượt các bước: Kiểm tra hạn mức \-\> Tạo giao dịch \-\> Cập nhật số dư. Nếu lỗi \-\> Thực hiện các lệnh đền bù (Compensating transactions).  
-4. **Token-based Authentication (HttpOnly):** Bảo mật phiên làm việc người dùng.  
-5. **Cache-Aside Pattern:** Frontend kiểm tra cache (React Query) trước, nếu không có mới gọi API (Edge Functions/Supabase).  
-6. **BFF (Backend For Frontend) / Proxy Pattern:** gemini-proxy đóng vai trò trung gian gọi tới Google Gemini, ẩn đi logic xác thực và xử lý dữ liệu thô khỏi Client.
+### **2. Giải pháp (Solution)**
+- **Bổ sung lớp kiểm thử End-to-End bằng Cypress:** Xây dựng các kịch bản E2E mô phỏng luồng người dùng thật:
+  - Đăng ký & đăng nhập (Authentication).
+  - Tạo giao dịch và xem thống kê (Transaction & Statistic).
+  - Quản lý giao dịch định kỳ (Preodic).
+  - Quản lý mục tiêu tiết kiệm (Economical).
+- **Tích hợp kiểm thử vào CI pipeline trên GitHub Actions:** Mỗi lần push/pull request, pipeline sẽ tự động:
+  - Cài đặt Node + dependency.
+  - Build ứng dụng React.
+  - Chạy npm run test:ci.
+  - Chạy toàn bộ test E2E bằng Cypress (npm run e2e): Nếu bất kỳ bước nào fail → job dừng, commit bị đánh dấu đỏ, giúp phát hiện lỗi sớm.
+- **Mock các API Supabase trong E2E test:** 
+  - Sử dụng ```cy.intercept()``` để giả lập response từ Edge Functions và REST API của Supabase.
+  - Giúp test chạy ổn định, không phụ thuộc mạng hay trạng thái database thật; đồng thời dễ tạo các kịch bản dữ liệu “đẹp” để demo.
 
-**Luồng hoạt động chính (Ví dụ: Tạo Giao Dịch):**
+### **3. Kết quả (Result)**
+- **Kết quả chạy cục bộ:** 
+  - ```npm run test:ci``` hiện chưa có file Jest test nên log “No tests found, exiting with code 0”, tuy nhiên exit code = 0 nên được coi là thành công.
+  - **Đây sẽ là chỗ cho hình ảnh**
+  - ```npm run e2e``` chạy 4 spec (auth, finance-flows, preodic, economical) với tổng 8 test, 8 passed, 0 failed (screenshot đính kèm).
+  - **Đây sẽ là chỗ cho hình ảnh**
+- **Lợi ích đạt được:**
+  - Mỗi lần push code, GitHub Actions tự động build và chạy lại toàn bộ kịch bản E2E cho các luồng quan trọng nhất của FinSmart.
+  - Nếu một thay đổi làm hỏng luồng đăng nhập, tạo giao dịch, định kỳ hoặc tiết kiệm, pipeline sẽ fail ngay trên GitHub, giúp nhóm phát hiện và sửa lỗi sớm.
+  - Việc sử dụng ```cy.intercept()``` để mock Supabase giúp test ổn định, không bị phụ thuộc vào dữ liệu thật hoặc tình trạng của dịch vụ bên ngoài.
 
-1. **Request:** User gửi yêu cầu tạo giao dịch từ UI.  
-2. **Orchestrator:** Edge Function create-transaction-saga nhận yêu cầu.  
-3. **Step 1:** Gọi Service kiểm tra Hạn mức ngân sách.  
-4. **Step 2:** Gọi Service lưu Giao dịch vào DB.  
-5. **Step 3:** Gọi Service cập nhật Số dư ví.  
-6. **Completion:** Nếu thành công, trả về kết quả. Nếu thất bại ở Step 3, Saga kích hoạt rollback Step 2\.  
-7. **Sync:** Frontend nhận kết quả và làm mới (invalidate) Cache cục bộ để hiển thị dữ liệu mới nhất.
+---
 
-## **4. Cách Sử Dụng**
+## **2. Đào Hồng Lĩnh**
 
-### **4.1. Yêu Cầu Hệ Thống**
+---
 
-* Node.js (v18 trở lên) và npm.  
-* Python (3.11 trở lên) để chạy Server phụ trợ AI (Flask) hoặc kịch bản kiểm thử Locust.  
-* Supabase Account & CLI (nếu chạy local backend).  
-* Trình duyệt Google Chrome (có cài đặt React Developer Tools).
+# A. API Gateway (API Third Party Proxy)
 
-### **4.2. Khởi Chạy Hệ Thống**
+### **1. Vấn đề (Problem)**
+- **Lộ Key bảo mật:** Khi Client (Frontend) gọi trực tiếp đến các dịch vụ thứ 3 (như Database, AI Service, Payment Gateway), chúng ta buộc phải lưu API Key hoặc Token ở phía Client. Hacker có thể dễ dàng mở Network Tab của trình duyệt để lấy trộm các Key này.
+- **Thiếu kiểm soát truy cập:** Không thể chặn hoặc lọc các yêu cầu từ Client gửi đi nếu gọi trực tiếp từ Frontend, không kiểm soát được ai đang gọi API, tần suất bao nhiêu, có thể spam gây ảnh hưởng tới hệ thống, cụ thể hơn là tốn token.
 
-1. **Cài đặt dependencies cho Frontend:**  
-```Bash  
-npm install
-```
+### **2. Giải pháp (Solution)**
+- Chuyển đổi từ mô hình **Client** → **Third Party** sang mô hình **Client** → **Proxy (Server)** → **Third Party**.
+- Xây dựng **API Proxy** sử dụng **Supabase Edge Functions (Deno)**.
+- Tất cả các Key nhạy cảm (```SERVICE_KEY```, ```REDIS_TOKEN```, ```GEMINI_API_KEY```) được lưu trữ an toàn trong **biến môi trường** (Environment Variables) tại Server, tuyệt đối không lộ ra Frontend.
+- Client chỉ gọi đến Proxy của hệ thống, Proxy sẽ xử lý nốt việc gọi tiếp đến dịch vụ thứ 3, tất cả những biến nhạy cảm đều không để bị lộ.
 
-2. **Cấu hình biến môi trường:**  
-* Đổi tên .env.development (hoặc tạo mới) và điền các thông tin: VITE\_SUPABASE\_URL, VITE\_SUPABASE\_KEY.
+### **3. Tình huống cụ thể (Example)**
+- **Nếu KHÔNG có Proxy:** 
+  - Frontend gọi trực tiếp đến Gemini, sử dụng các biến nhạy cảm ở ```.env```. Chúng ta phải nhúng ```SECRET_KEY``` vào code JavaScript ở Frontend.
+  - **Hậu quả:** Hacker mở **F12 (DevTools)**, vào tab **Network**, nhìn thấy ngay **Authorization: Bearer sk-12345abcxyz....** Họ copy key này, về nhà viết tool riêng khai thác tài nguyên sử dụng key này, ví dụ như API của gemini, từ đó có thể gây ra thiệt hại và ảnh hưởng tới hệ thống.
+- **Khi CÓ Proxy:**
+  - Client chỉ gọi POST /api/… về server của mình.
+  - **Server (Supabase Edge Function)** giữ ```SECRET_KEY``` trong biến môi trường bí mật. Server tự mình gọi tới, mọi thao tác xử lý sẽ nằm ở Edge Function, nó sẽ tự lấy các biến hoặc tự gọi tới mô hình gemini để lấy dữ liệu.
+  - **Kết quả:** Client không bao giờ chạm được vào Key, không thể nào biết key để có thể lợi dụng.
 
-3. **Khởi chạy Frontend:**  
-```Bash  
-npm start  
-```
-* Ứng dụng sẽ chạy tại http://localhost:3000 (hoặc cổng tương ứng).
+---
 
-4. **Khởi chạy Backend AI (Python \- Optional nếu dùng Edge Function):**  
-```Bash  
-cd src/backend  
-pip install \-r requirements.txt  
-python ai.py
-```
+# B. Rate Limiting
 
-### **4.3. Sử Dụng Chức Năng Upload**
+### **1. Vấn đề (Problem)**
+- **Tấn công dò mật khẩu (Brute-Force & Credential Stuffing):** 
+  - Kẻ tấn công sử dụng công cụ tự động để thử hàng nghìn tổ hợp mật khẩu khác nhau vào một tài khoản trong thời gian ngắn.
+  - **Hậu quả**: Gây quá tải hệ thống xác thực và nguy cơ bị lộ tài khoản người dùng.
+- **Cạn kiệt tài nguyên (Resource Exhaustion/Spam):**
+  - Bot hoặc Script độc hại thực hiện đăng ký tài khoản hàng loạt.
+  - **Hậu quả**: Làm đầy Database với dữ liệu rác, tiêu tốn tài nguyên tính toán (CPU/RAM) cho việc mã hóa mật khẩu (Hashing), và khai thác tính năng đăng ký để kiểm tra sự tồn tại của người dùng (User Enumeration).
+- **Lạm dụng từ nội bộ (Authenticated Abuse):** Ngay cả khi đã đăng nhập thành công, một tài khoản bị chiếm quyền (hoặc người dùng xấu) có thể spam request API để tấn công hệ thống từ bên trong (Internal DDoS).
+- **Thách thức hạ tầng mạng (NAT Challenge):** Trong thực tế, nhiều người dùng (ví dụ: trường học, quán Cafe) chia sẻ chung một địa chỉ IP Public thông qua cơ chế NAT. Việc chặn IP đơn thuần sẽ dẫn đến chặn nhầm người dùng hợp lệ.
 
-*Trong ngữ cảnh Finsmart, chức năng "Upload" tương ứng với việc Nhập liệu giao dịch hoặc Import dữ liệu.*
+### **2. Giải pháp (Solution)**
+- **Chiến lược bảo vệ Đăng nhập (2-Phase Defense):**
+  - **Lớp 1 - Global IP Limit:** Giới hạn tổng số request từ 1 IP (Ví dụ: 100 req/5 phút). Mục tiêu: Chống Spam/DDoS diện rộng.
+  - **Lớp 2 - Targeted User Limit:** Giới hạn số lần thử sai trên 1 tài khoản cụ thể (Ví dụ: 5 req/3 phút). Mục tiêu: Chống dò mật khẩu (Brute-force) vào mục tiêu cụ thể mà không ảnh hưởng đến người dùng khác cùng IP.
+  - 2 lớp này có thể phủ được nhiều trường hợp, bao gồm trường hợp phổ biến nhất là người dùng quên mật khẩu, nhập lại nhiều lần nhưng không ảnh hưởng đến mọi người trong phòng, có thời gian reset hợp lí, đồng thời chống DDOS khi hacker muốn xâm nhập hệ thống.
+- **Chiến lược bảo vệ Đăng ký (Write Protection):** Mỗi lần push/pull request, pipeline sẽ tự động:
+  - **Global IP Limit:** Giới hạn nghiêm ngặt số lượng tài khoản được tạo từ 1 IP trong khoảng thời gian ngắn. Ngăn chặn việc làm rác Database, không reset khi người dùng đăng ký thành công.
+- **Chiến lược bảo vệ sau đăng nhập (Internal Traffic Control):** 
+  - Áp dụng giới hạn cho các API nội bộ (như /rl-check) ở mức 50 req/phút cho mỗi User ID. Đảm bảo hacker không thể dùng tài khoản hợp lệ để làm tê liệt hệ thống.
 
-* Đăng nhập vào hệ thống.  
-* Truy cập trang **Transactions**.  
-* Chọn **Add Transaction**.  
-* Nhập thông tin hoặc tải lên hình ảnh hóa đơn (nếu tính năng OCR được kích hoạt). Hệ thống sẽ xử lý và lưu trữ thông qua API addTransaction.
+### **3. Phân tích Kỹ thuật**
+- **Chính sách "No-Reset on Success":** 
+  - **Cơ chế:** Bộ đếm Rate Limit sẽ không được reset về 0 ngay cả khi người dùng đăng nhập hoặc đăng ký thành công.
+  - **Lý do bảo mật:** Để chống lại kỹ thuật "Gaming the System". Kẻ tấn công có thể thử 4 lần sai, sau đó thực hiện 1 lần đúng (hoặc login vào tài khoản rác) để reset bộ đếm, rồi lại tiếp tục tấn công. Việc giữ nguyên bộ đếm giúp duy trì áp lực bảo mật liên tục trong khung thời gian (Window).
+  - **Trade-off:** Chấp nhận rủi ro nhỏ về trải nghiệm người dùng (UX) để đổi lấy sự an toàn tuyệt đối cho hệ thống.
+- **Thuật toán Fixed Window (Cửa sổ cố định)**
+  - Hệ thống sử dụng cơ chế đếm trên các key Redis Upstash có TTL.
+  - **Ưu điểm:** Fixed Window có hiệu suất cao, là lựa chọn tuyệt vời cho các giới hạn tốc độ cơ bản và các ứng dụng có lưu lượng truy cập lớn cần tiết kiệm tài nguyên, hiệu năng cực cao, độ trễ thấp và chi phí triển khai trên Edge Functions rẻ hơn so với thuật toán Sliding Window Log phức tạp.
+  - **Nhược điểm:** Trong khoảng thời gian cực ngắn (chỉ 1 giây, từ 00:59 đến 01:00.1), Server của bạn phải xử lý 10 request thay vì giới hạn 5 request. Nếu có hàng nghìn kẻ tấn công làm điều này đồng thời, toàn bộ hệ thống sẽ bị quá tải (Spike) ngay tại thời điểm chuyển giao cửa sổ (Window boundary), dẫn đến tình trạng treo máy hoặc chậm phản hồi, tức là hacker phải căn được thời điểm hoàn hảo để tấn công, tuy nhiên thực tế sẽ không đơn giản do tính không đồng bộ của mạng và đồng bộ hóa các Botnet trong thời gian tính bằng ms.
+- **Kết quả đạt được:**
+  - **Chặn đứng tấn công Brute-force & Spam:** Hệ thống tự động trả về lỗi 429 Too Many Requests khi vượt quá giới hạn.
+  - **Tối ưu hiệu năng & Giảm tải Database:** Toàn bộ việc kiểm tra diễn ra tại Edge (Redis), request rác bị chặn ngay từ cổng, không làm tốn tài nguyên Database xử lý. Độ trễ cực thấp nhờ thuật toán Fixed Window (độ phức tạp O(1)).
+  - **Giải quyết vấn đề NAT (Trải nghiệm người dùng):** Nhờ cơ chế Targeted User Limit, hệ thống chỉ khóa tài khoản đang bị tấn công, không khóa toàn bộ IP. Người dùng khác dùng chung Wifi (như quán Cafe) vẫn truy cập bình thường.
+  - **Ngăn chặn lạm dụng nội bộ:** Ngay cả user đã đăng nhập cũng bị giới hạn tần suất gọi API (ví dụ: ```rl-check```), ngăn chặn việc dùng tài khoản hợp lệ để DDoS hệ thống từ bên trong.
 
-### **4.4. Truy Cập Các Công Cụ Giám Sát**
+---
 
-* **Hệ thống Health Check UI:** Truy cập Dashboard, icon trạng thái hệ thống (Góc trên bên phải) hiển thị tình trạng kết nối API và Database (Task 4).  
-* **Supabase Dashboard:** Truy cập trang quản trị Supabase để xem Logs của Edge Functions và Database performance.  
-* **Chrome DevTools:** Sử dụng tab **Application** để kiểm tra HttpOnly Cookies và tab **Network** để xem hiệu quả của Caching (các request trả về 304 hoặc lấy từ disk cache).
+# C. Retry Pattern
 
-### **4.5. Chạy Kiểm Thử Tải (k6)**
+### **1. Vấn đề (Problem)**
+- **Khả năng sẵn sàng kém (Poor Availability):** Hệ thống không thể xử lý các lỗi mạng chập chờn, lỗi timeout hoặc lỗi 5xx tạm thời (Transient Failures) mà Server dễ gặp phải trong môi trường Cloud.
+  - **Lỗi ở Tầng Ứng dụng (Application Layer):** Các vấn đề về cache dữ liệu, lỗi mount component tạm thời, hoặc lỗi fetching dữ liệu nhanh từ phía Client.
+  - **Lỗi ở Tầng Mạng/Dịch vụ (Network/Service Layer):** Các lỗi do dịch vụ Backend hoặc dịch vụ bên thứ ba (Third Party API) bị quá tải, gây ra lỗi 503 (Service Unavailable) hoặc Timeout.
+- **Thundering Herd:** Nếu tất cả các Client thử lại cùng một lúc sau một lỗi đồng bộ, chúng sẽ tạo ra một làn sóng (Retry Storm) request khổng lồ, khiến Server đang yếu lại bị quá tải nặng hơn và sập hoàn toàn.
 
-*Lưu ý: Dự án hiện tại đã tích hợp thêm Locust (locustfile.py) để kiểm thử tải cho các dịch vụ AI và API. Tuy nhiên, quy trình vẫn tuân theo nguyên lý kiểm thử tải.*
+### **2. Giải pháp (Solution)**
+ **Thuật toán Exponential Backoff và Jitter được triển khai theo Chiến lược Đa Lớp (Multi-layered Strategy) để tối ưu khả năng phục hồi ở từng tầng kiến trúc:**
 
-1. Điều hướng đến thư mục test: ```cd tests```
-2. Cài đặt Locust (nếu chưa có): ```pip install locust```
+ #### **a. Triển khai Lớp 1: Tầng Ứng dụng (Application Layer - React)**
+Lớp này tập trung vào việc cải thiện trải nghiệm người dùng (UX) và xử lý các lỗi tức thời, không cần can thiệp sâu của Server.
+- **Cơ chế:** Sử dụng thư viện quản lý trạng thái và fetching dữ liệu (React Query) để tự động xử lý request thất bại.
+- **Cấu hình:** Đặt retry: 1
+- **Mục tiêu:**
+  - Xử lý lỗi mạng rất nhỏ, cục bộ xảy ra giữa thiết bị người dùng và Edge Function.
+  - Tăng Trải nghiệm Người dùng (UX) bằng cách tự động thử lại nhanh chóng, không làm gián đoạn giao diện.
 
-3. Chạy Locust:  
-```Bash  
-locust \-f locustfile.py
-```
+ #### **b. Triển khai Lớp 2: Tầng API (Network/HTTP Request - Edge Function)**
+Lớp này tập trung vào bảo vệ hệ thống và ngăn chặn Retry Storm khi gọi các dịch vụ Backend/Bên thứ ba.
+- **Cơ chế:** Hàm ```retryWrapper``` tùy chỉnh, được áp dụng cho mọi lời gọi HTTP request quan trọng trong Edge Function.
+- **Logic Thử lại:**
+  - Thử lại Lũy thừa (Backoff): Độ trễ chờ tăng theo cấp số mũ ( 2^i) cho phép Backend có thời gian phục hồi.
+  - Thêm Nhiễu Ngẫu nhiên (Jitter): Chọn độ trễ thực tế (actualDelay) ngẫu nhiên trong khoảng đã tính toán. Mục tiêu là phá vỡ sự đồng bộ.
+  - **Hạn chế:** Giới hạn số lần thử lại (maxRetries = 3) và thời gian chờ tối đa (maxDelayMs = 10000ms).
+- **Mục tiêu:** Bảo vệ bệ thống khỏiretry storm, và đảm bảo tính nguyên tử của giao dịch khi tương tác với các dịch vụ bên ngoài.
 
-4. Truy cập giao diện Web Locust tại http://localhost:8089 để cấu hình số lượng Users và Spawn rate.  
-   (Nếu sử dụng k6 như mẫu cũ, chạy lệnh: k6 run test/load-test.js nếu file tồn tại)
-
-### **4.6. Dừng Hệ Thống**
-
-* Frontend: Nhấn Ctrl \+ C tại terminal.  
-* Backend AI: Nhấn Ctrl \+ C.
-
-## **5\. So sánh hiệu năng**
-
-### **5.1 Mô tả kịch bản kiểm thử**
-
-| Kịch bản | Loại kiểm thử | Mô tả | Mục đích |
-| :---- | :---- | :---- | :---- |
-| 1 | Kiểm thử truy vấn dữ liệu (Read Heavy) | \- Users: 50 \- Hành vi: Truy cập Dashboard, xem lịch sử giao dịch liên tục. \- So sánh: Có Caching vs Không có Caching. | Đánh giá hiệu quả của Client-Side Caching (React Query) trong việc giảm độ trễ hiển thị và giảm tải cho Server. |
-| 2 | Kiểm thử giao dịch phức tạp (Write Heavy) | \- Users: 20 \- Hành vi: Thực hiện "Thêm giao dịch" liên tục đồng thời. \- So sánh: Kiến trúc cũ (Direct DB call) vs Saga Pattern (Edge Function). | Đánh giá độ ổn định và tính toàn vẹn dữ liệu khi hệ thống chịu tải ghi cao. |
-| 3 | Stress Test hệ thống | \- Users: 200+ (Ramp-up) \- Hành vi: Hỗn hợp (Vừa xem báo cáo, vừa thêm giao dịch, vừa chat AI). | Tìm điểm gãy của hệ thống (Bottleneck) tại Edge Functions hoặc Database Connection Pool. |
-
-### **5.2 Mô tả kết quả**
-
-|  | Kịch bản 1 (Read) | Kịch bản 2 (Write) | Kịch bản 3 (Stress) | Kết luận |
-| :---- | :---- | :---- | :---- | :---- |
-| **Kiến trúc cũ (No Cache, No Saga)** | \- Latency trung bình: **\~800ms**  \- Database Calls: **Rất cao** (1 request/view) \- Trải nghiệm: Giật lag khi chuyển trang. | \- Tỷ lệ lỗi (Data Inconsistency): **Cao** (Số dư không khớp khi có lỗi mạng). \- Failed Requests: **\~5%** khi tải cao. | \- Max Users: **\~80**  \- Bottleneck: Database CPU spike do quá nhiều truy vấn lặp lại. | Kiến trúc cũ đơn giản nhưng không chịu được tải cao và dễ sai lệch dữ liệu tài chính. |
-| **Kiến trúc mới (FSD, Caching, Saga)** | \- Latency trung bình (First Load): **\~850ms**  \- Latency (Subsequent): **\< 50ms** (Instant) \- Database Calls: **Giảm 80%** (nhờ Cache Hit). | \- Tỷ lệ lỗi dữ liệu: **\~0%** (Nhờ cơ chế Rollback của Saga). \- Latency ghi: Cao hơn một chút (\~1.2s) do xử lý logic phức tạp nhưng đảm bảo an toàn. | \- Max Users: **\~300+**  \- Bottleneck: Chuyển sang giới hạn của Edge Function Invocation (dễ dàng scale hơn DB). | **Caching** giúp trải nghiệm đọc mượt mà tuyệt đối. **Saga Pattern** tuy làm tăng nhẹ thời gian ghi nhưng đảm bảo độ tin cậy tuyệt đối cho dữ liệu tài chính \- yếu tố sống còn của ứng dụng Fintech. |
-
-### **5.3 Kết luận**
-
-Qua quá trình tái cấu trúc và kiểm thử, nhóm rút ra các kết luận sau:
-
-1. **Hiệu quả của Client-Side Caching (Task 2):**  
-   * **Ưu điểm:** Đây là cải tiến mang lại hiệu quả rõ rệt nhất về mặt trải nghiệm người dùng (UX). Thời gian phản hồi gần như tức thì cho các dữ liệu đã tải.  
-   * **Nhược điểm:** Cần xử lý kỹ bài toán "Cache Invalidation" (làm mới cache) ngay sau khi người dùng thực hiện cập nhật dữ liệu (Mutation) để tránh hiển thị thông tin cũ.  
-2. **Sức mạnh của Saga Pattern (Task 6, 7):**  
-   * **Ưu điểm:** Giải quyết triệt để vấn đề sai lệch số dư khi mạng chập chờn hoặc server lỗi giữa chừng. Hệ thống có khả năng tự phục hồi (Self-healing) thông qua cơ chế bù trừ.  
-   * **Nhược điểm:** Tăng độ phức tạp của code backend và tăng nhẹ thời gian phản hồi cho các tác vụ ghi (do phải đi qua nhiều bước kiểm tra).  
-3. **Bảo mật với HttpOnly Cookies (Task 1):**  
-   * Ngăn chặn hoàn toàn khả năng tấn công XSS đánh cắp Token, nâng cao uy tín của ứng dụng tài chính.  
-4. **Feature-Sliced Design:**  
-   * Giúp codebase trở nên cực kỳ trong sáng, dễ dàng onboarding thành viên mới và giảm thiểu xung đột code khi nhiều người cùng làm việc (Frontend & Security & DevOps).
-
-**Khuyến nghị:** Kiến trúc hiện tại đã cân bằng tốt giữa Hiệu năng (Caching), An toàn (Saga/Auth) và Khả năng bảo trì (FSD). Tuy nhiên, cần chú ý giám sát chi phí sử dụng Edge Functions khi lượng người dùng tăng đột biến.
-
-## **6\. Thành Viên Nhóm**
-
-* Lê Duy Vũ 23021751  
-* Nguyễn Anh Tuấn 23021707  
-* Đào Hồng Lĩnh 23021613  
-* Nguyễn Trung Hiếu 23020664
+### **3. Kết quả (Result)**
+- Hệ thống khắc phục được những lúc gặp sự cố tạm thời nhờ cơ chế phân tầng:
+  - Nếu React Cache có vấn đề hoặc lỗi kết nối Client-Side nhỏ, Lớp 1 sẽ xử lý bằng một lần retry nhanh chóng, không ảnh hưởng tới back-end hay trải nghiệm người dùng.
+  - Nếu Tầng Network/Backend có vấn đề (ví dụ: Server bên thứ ba như Gemini gặp sự cố tạm thời 503), Lớp 2 (Edge Function) sẽ kích hoạt Backoff và Jitter. Lớp 2 sẽ dàn đều các yêu cầu thử lại theo thời gian. Điều này ngăn chặn làn sóng request đồng bộ đâm vào Server, cho phép Server có thời gian tự phục hồi, và đảm bảo tính sẵn sàng (Availability) của dịch vụ được duy trì.
